@@ -177,7 +177,7 @@ public class EC2UnixLauncher extends EC2ComputerLauncher {
     private Connection connectToSsh(EC2Computer computer, PrintStream logger) throws EC2Exception, InterruptedException {
         while(true) {
             try {
-                String host = computer.updateInstanceDescription().getDnsName();
+                String host = computer.updateInstanceDescription().getPrivateIpAddress();
                 if ("0.0.0.0".equals(host)) {
                     logger.println("Invalid host 0.0.0.0, your host is most likely waiting for an ip address.");
                     throw new IOException("goto sleep");
