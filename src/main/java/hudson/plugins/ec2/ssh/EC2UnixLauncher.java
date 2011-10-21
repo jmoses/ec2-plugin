@@ -21,6 +21,7 @@ import org.jets3t.service.S3ServiceException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
+import java.lang.Throwable;
 
 /**
  * {@link ComputerLauncher} that connects to a Unix slave on EC2 by using SSH.
@@ -125,9 +126,14 @@ public class EC2UnixLauncher extends EC2ComputerLauncher {
                 }
             });
             successful = true;
+        } catch(Throwable t) {
+          logger.println("Something terrible happened. I caught a " + t.getClass().getName() + " that said: " + t.getMessage());
         } finally {
-            if(cleanupConn != null && !successful)
-                cleanupConn.close();
+            if(cleanupConn != null && !successful) {
+              logger.println("Closing SSH connection...");
+              cleanupConn.close();
+            }
+            logger.println("Session Terminated.");
         }
     }
 

@@ -51,6 +51,12 @@
       <artifactId>typica</artifactId>
       <version>1.7.2</version>
     </dependency>
+    <dependency>
+        <groupId>org.jvnet.hudson</groupId>
+        <artifactId>trilead-ssh2</artifactId>
+        <version>build212-hudson-6</version>
+    </dependency>
+
   </dependencies>
 
   <developers>
