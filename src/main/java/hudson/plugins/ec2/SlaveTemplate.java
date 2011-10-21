@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.Arrays;
 
 /**
  * Template of {@link EC2Slave} to launch.
@@ -46,12 +47,13 @@ public class SlaveTemplate implements Describable<SlaveTemplate> {
     public final String remoteAdmin;
     public final String rootCommandPrefix;
     public final String jvmopts;
+    public final String groupSet;
     protected transient EC2Cloud parent;
 
     private transient /*almost final*/ Set<LabelAtom> labelSet;
 
     @DataBoundConstructor
-    public SlaveTemplate(String ami, String remoteFS, String sshPort, InstanceType type, String labelString, String description, String initScript, String userData, String numExecutors, String remoteAdmin, String rootCommandPrefix, String jvmopts) {
+    public SlaveTemplate(String ami, String remoteFS, String sshPort, InstanceType type, String labelString, String description, String initScript, String userData, String numExecutors, String remoteAdmin, String rootCommandPrefix, String jvmopts, String groupSet) {
         this.ami = ami;
         this.remoteFS = remoteFS;
         this.sshPort = sshPort;
@@ -64,6 +66,7 @@ public class SlaveTemplate implements Describable<SlaveTemplate> {
         this.remoteAdmin = remoteAdmin;
         this.rootCommandPrefix = rootCommandPrefix;
         this.jvmopts = jvmopts;
+        this.groupSet = groupSet;
         readResolve(); // initialize
     }
     
@@ -105,6 +108,23 @@ public class SlaveTemplate implements Describable<SlaveTemplate> {
     public Set getLabelSet(){
     	return labelSet;
     }
+
+    public String getGroupSet() {
+      return this.groupSet;
+    }
+
+    public List<String> formatGroupSet() {
+      if( groupSet != null && ! groupSet.trim().equals("") ) { 
+        List<String> groups = Arrays.asList(groupSet.split(","));
+        for(int i=0; i < groups.size(); i++) {
+          groups.set(i, groups.get(i).trim() );
+        }
+
+        return groups;
+      } else {
+       return Collections.<String>emptyList();
+      }
+    }
     
     /**
      * Does this contain the given label?
@@ -130,7 +150,7 @@ public class SlaveTemplate implements Describable<SlaveTemplate> {
             KeyPairInfo keyPair = parent.getPrivateKey().find(ec2);
             if(keyPair==null)
                 throw new EC2Exception("No matching keypair found on EC2. Is the EC2 private key a valid one?");
-            Instance inst = ec2.runInstances(ami, 1, 1, Collections.<String>emptyList(), userData, keyPair.getKeyName(), type).getInstances().get(0);
+            Instance inst = ec2.runInstances(ami, 1, 1, formatGroupSet(), userData, keyPair.getKeyName(), type).getInstances().get(0);
             return newSlave(inst);
         } catch (FormException e) {
             throw new AssertionError(); // we should have discovered all configuration issues upfront
