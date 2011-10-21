@@ -2,9 +2,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.jenkins-ci.plugins</groupId>
-    <artifactId>plugin</artifactId>
-    <version>1.399</version>
+    <groupId>org.jvnet.hudson.plugins</groupId>
+    <artifactId>hudson-plugin-parent</artifactId>
+    <version>1.398</version>
   </parent>
   
   <artifactId>ec2</artifactId>
@@ -14,8 +14,8 @@
   <url>http://wiki.jenkins-ci.org/display/JENKINS/Amazon+EC2+Plugin</url>
 
   <scm>
-    <connection>scm:git:git://github.com/jenkinsci/ec2-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:jenkinsci/ec2-plugin.git</developerConnection>
+    <connection>scm:git:git@github.com:jmoses/ec2-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:jmoses/ec2-plugin.git</developerConnection>
   </scm>
 
   <dependencies>
@@ -42,6 +42,11 @@
       <version>140</version>
     </dependency>
     <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.1.1</version>
+    </dependency>
+    <dependency>
       <groupId>com.google.code.typica</groupId>
       <artifactId>typica</artifactId>
       <version>1.7.2</version>
@@ -53,6 +58,11 @@
       <id>kohsuke</id>
       <name>Kohsuke Kawaguchi</name>
       <email>kkawaguchi@cloudbees.com</email>
+    </developer>
+    <developer>
+      <id>jmoses</id>
+      <name>Jon Moses</name>
+      <email>jon@burningbush.us</email>
     </developer>
   </developers>
 
