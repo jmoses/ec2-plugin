@@ -62,7 +62,7 @@ public class EC2UnixLauncher extends EC2ComputerLauncher {
             SCPClient scp = conn.createSCPClient();
             String initScript = computer.getNode().initScript;
 
-            if(initScript!=null && initScript.trim().length()>0 && conn.exec("test -e /.hudson-run-init", logger) !=0) {
+            if(initScript!=null && initScript.trim().length()>0 && runCommand(conn, "test -e /.hudson-run-init", logger) !=0) {
                 logger.println("Executing init script");
                 scp.put(initScript.getBytes("UTF-8"),"init.sh","/tmp","0700");
                 Session sess = conn.openSession();
@@ -86,27 +86,22 @@ public class EC2UnixLauncher extends EC2ComputerLauncher {
 
             // TODO: parse the version number. maven-enforcer-plugin might help
             logger.println("Verifying that java exists");
-            if(conn.exec("java -fullversion", logger) !=0) {
+            if( runCommand(conn, "java -fullversion", logger) !=0) {
                 logger.println("Installing Java");
 
                 String jdk = "java1.6.0_12";
                 String path = "/hudson-ci/jdk/linux-i586/" + jdk + ".tgz";
 
                 URL url = EC2Cloud.get().buildPresignedURL(path);
-                if(conn.exec("wget -nv -O /usr/" + jdk + ".tgz '" + url + "'", logger) !=0) {
-                    logger.println("Failed to download Java");
-                    return;
+                String javaInstallCmd = "wget -nv -O /usr/" + jdk + ".tgz '" + url + "'" +
+                  " && " + "tar xz -C /usr -f /usr/" + jdk + ".tgz" + " && " +
+                  "ln -s /usr/" + jdk + "/bin/java /bin/java";
+
+                if( runCommand(conn, javaInstallCmd, logger) != 0) {
+                  logger.println("Unable to install Java");
+                  return;
                 }
 
-                if(conn.exec("tar xz -C /usr -f /usr/" + jdk + ".tgz", logger) !=0) {
-                    logger.println("Failed to install Java");
-                    return;
-                }
-
-                if(conn.exec("ln -s /usr/" + jdk + "/bin/java /bin/java", logger) !=0) {
-                    logger.println("Failed to symlink Java");
-                    return;
-                }
             }
 
             // TODO: on Windows with ec2-sshd, this scp command ends up just putting slave.jar as c:\tmp
@@ -118,7 +113,10 @@ public class EC2UnixLauncher extends EC2ComputerLauncher {
 
             logger.println("Launching slave agent");
             final Session sess = conn.openSession();
-            sess.execCommand("java " + computer.getNode().jvmopts + " -jar /tmp/slave.jar");
+            String jvmOpts = computer.getNode().jvmopts;
+            if( jvmOpts == null) jvmOpts = "";
+            logger.println("Running java " + jvmOpts + " -jar /tmp/slave.jar");
+            sess.execCommand("java " + jvmOpts + " -jar /tmp/slave.jar");
             computer.setChannel(sess.getStdout(),sess.getStdin(),logger,new Listener() {
                 public void onClosed(Channel channel, IOException cause) {
                     sess.close();
@@ -135,6 +133,17 @@ public class EC2UnixLauncher extends EC2ComputerLauncher {
             }
             logger.println("Session Terminated.");
         }
+    }
+
+    private int runCommand(Connection connection, String command, PrintStream logger) throws IOException, InterruptedException {
+        Session session = connection.openSession();
+        logger.println("Running cmd: " + command);
+        session.execCommand(command);
+        session.getStdin().close();    // nothing to write here
+        IOUtils.copy(session.getStdout(),logger);
+        IOUtils.copy(session.getStderr(),logger);
+
+        return waitCompletion(session);
     }
 
     private int bootstrap(Connection bootstrapConn, EC2Computer computer, PrintStream logger) throws IOException, InterruptedException, EC2Exception {
